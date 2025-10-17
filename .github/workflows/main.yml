@@ -25,4 +25,4 @@ jobs:
 
       - name: Run Python script
         run: |
-          python GuessingGame/Guessing.py
+          python Guessing.py
