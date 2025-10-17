@@ -1,0 +1,39 @@
+name: Deploy Python App to AWS EC2
+
+on:
+  push:
+    branches:
+      - main  # or 'master' if that's your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          sudo yum update -y
+          sudo yum install git python3 -y
+          mkdir -p ~/python-app
+          cd ~/python-app
+          if [ -d .git ]; then
+              git pull origin main
+          else
+              git clone https://github.com/Ngomeli/GuessingGame.git .
+          fi
+          python3 -m venv venv
+          source venv/bin/activate
+          if [ -f requirements.txt ]; then
+              pip install -r requirements.txt
+          fi
+          python3 main.py   # change this to your file name
+          EOF
