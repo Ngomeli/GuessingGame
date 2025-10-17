@@ -1,10 +1,7 @@
-name: Python CI
+name: Python CI/CD
 
 on:
   push:
-    branches:
-      - master
-  pull_request:
     branches:
       - master
 
@@ -25,6 +22,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      - name: Run Guessing Game with input
+      - name: Run Guessing Game test
         run: |
           python Guessing.py < input.txt
+
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ec2-user
+            if [ -d "GuessingGame" ]; then
+              cd GuessingGame
+              git pull
+            else
+              git clone https://github.com/Ngomeli/GuessingGame.git
+              cd GuessingGame
+            fi
+            python3 Guessing.py < input.txt
