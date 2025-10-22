@@ -3,7 +3,7 @@ name: Python CI/CD Pipeline 🚀
 on:
   push:
     branches:
-      - main  # or 'master' if that’s your default branch
+      - master  # or 'main' if that’s your default branch
 
 jobs:
   build-and-deploy:
@@ -70,4 +70,12 @@ jobs:
             echo "🚀 Starting application..."
             nohup python3 Guessing.py > app.log 2>&1 &
 
-            echo "✅ Deployment complete. App running in background."
+            # 🔹 Step 2: Start a lightweight log viewer
+            echo "📜 Moving log file to logs directory..."
+            mkdir -p logs
+            mv app.log logs/app.log 2>/dev/null || true
+
+            echo "🌍 Starting lightweight log viewer on port 8080..."
+            nohup python3 -m http.server 8080 --directory logs > /dev/null 2>&1 &
+
+            echo "✅ Deployment complete. Access logs at: http://<EC2-IP>:8080/logs/app.log"
