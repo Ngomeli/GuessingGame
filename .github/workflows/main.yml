@@ -3,7 +3,7 @@ name: Python CI/CD Pipeline 🚀
 on:
   push:
     branches:
-      - master  # or 'main' if that’s your default branch
+      - master  # change to 'main' if that’s your repo’s default branch
 
 jobs:
   build-and-deploy:
@@ -48,16 +48,10 @@ jobs:
             APP_DIR=~/GuessingGame
             REPO_URL=https://github.com/Ngomeli/GuessingGame.git
 
-            if [ -d "$APP_DIR/.git" ]; then
-              echo "🔄 Pulling latest changes..."
-              cd $APP_DIR
-              git pull origin main || git pull origin master
-            else
-              echo "📥 Cloning repository..."
-              rm -rf $APP_DIR
-              git clone $REPO_URL $APP_DIR
-              cd $APP_DIR
-            fi
+            echo "🧹 Cleaning old app directory..."
+            rm -rf $APP_DIR
+            git clone $REPO_URL $APP_DIR
+            cd $APP_DIR
 
             echo "🐍 Setting up Python environment..."
             python3 -m venv venv
@@ -70,7 +64,6 @@ jobs:
             echo "🚀 Starting application..."
             nohup python3 Guessing.py > app.log 2>&1 &
 
-            # 🔹 Step 2: Start a lightweight log viewer
             echo "📜 Moving log file to logs directory..."
             mkdir -p logs
             mv app.log logs/app.log 2>/dev/null || true
