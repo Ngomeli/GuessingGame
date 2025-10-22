@@ -50,4 +50,5 @@ jobs:
             pip install -r requirements.txt || echo "No requirements.txt found"
 
             echo "🚀 Running Guessing Game..."
-            nohup python3 Guessing.py > app.log 2>&1 &
+            nohup python3 app.py > app.log 2>&1 &
+
