@@ -1,38 +1,27 @@
-name: Python CI/CD Pipeline 🚀
+name: Python CI/CD Pipeline
 
 on:
   push:
     branches:
-      - master  # change to 'main' if that’s your repo’s default branch
+      - master
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout source code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.x'
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt || echo "No requirements.txt found"
 
-      # 4️⃣ Run simple test (Continuous Integration)
-      - name: Test Python app
-        run: |
-          echo "🏁 Running Guessing Game test"
-          python Guessing.py < input.txt || echo "⚠️ Warning: Test failed, check your script."
-
-      # 5️⃣ Deploy to AWS EC2 (Continuous Deployment)
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
@@ -40,35 +29,25 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            set -e
             echo "🔧 Updating system..."
             sudo yum update -y
             sudo yum install -y git python3
 
-            APP_DIR=~/GuessingGame
-            REPO_URL=https://github.com/Ngomeli/GuessingGame.git
-
             echo "🧹 Cleaning old app directory..."
-            rm -rf $APP_DIR
-            git clone $REPO_URL $APP_DIR
-            cd $APP_DIR
+            rm -rf ~/GuessingGame
+
+            echo "📦 Cloning latest code..."
+            git clone https://github.com/${{ github.repository }} ~/GuessingGame
+
+            cd ~/GuessingGame
 
             echo "🐍 Setting up Python environment..."
-            python3 -m venv venv
+            python3 -m venv venv || echo "Creating venv"
             source venv/bin/activate
-            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-            echo "🛑 Stopping any running Guessing.py process..."
-            pkill -f Guessing.py || true
+            echo "📦 Installing dependencies..."
+            pip install --upgrade pip
+            pip install -r requirements.txt || echo "No requirements.txt found"
 
-            echo "🚀 Starting application..."
+            echo "🚀 Running Guessing Game..."
             nohup python3 Guessing.py > app.log 2>&1 &
-
-            echo "📜 Moving log file to logs directory..."
-            mkdir -p logs
-            mv app.log logs/app.log 2>/dev/null || true
-
-            echo "🌍 Starting lightweight log viewer on port 8080..."
-            nohup python3 -m http.server 8080 --directory logs > /dev/null 2>&1 &
-
-            echo "✅ Deployment complete. Access logs at: http://<EC2-IP>:8080/logs/app.log"
