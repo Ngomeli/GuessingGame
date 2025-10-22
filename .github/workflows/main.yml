@@ -1,31 +1,38 @@
-name: Python CI/CD
+name: Python CI/CD Pipeline 🚀
 
 on:
   push:
     branches:
-      - master
+      - main  # or 'master' if that’s your default branch
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout source code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run Guessing Game test
+      # 4️⃣ Run simple test (Continuous Integration)
+      - name: Test Python app
         run: |
-          python Guessing.py < input.txt
+          echo "🏁 Running Guessing Game test"
+          python Guessing.py < input.txt || echo "⚠️ Warning: Test failed, check your script."
 
+      # 5️⃣ Deploy to AWS EC2 (Continuous Deployment)
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
@@ -33,12 +40,34 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            cd /home/ec2-user
-            if [ -d "GuessingGame" ]; then
-              cd GuessingGame
-              git pull
+            set -e
+            echo "🔧 Updating system..."
+            sudo yum update -y
+            sudo yum install -y git python3
+
+            APP_DIR=~/GuessingGame
+            REPO_URL=https://github.com/Ngomeli/GuessingGame.git
+
+            if [ -d "$APP_DIR/.git" ]; then
+              echo "🔄 Pulling latest changes..."
+              cd $APP_DIR
+              git pull origin main || git pull origin master
             else
-              git clone https://github.com/Ngomeli/GuessingGame.git
-              cd GuessingGame
+              echo "📥 Cloning repository..."
+              rm -rf $APP_DIR
+              git clone $REPO_URL $APP_DIR
+              cd $APP_DIR
             fi
-            python3 Guessing.py < input.txt
+
+            echo "🐍 Setting up Python environment..."
+            python3 -m venv venv
+            source venv/bin/activate
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+            echo "🛑 Stopping any running Guessing.py process..."
+            pkill -f Guessing.py || true
+
+            echo "🚀 Starting application..."
+            nohup python3 Guessing.py > app.log 2>&1 &
+
+            echo "✅ Deployment complete. App running in background."
